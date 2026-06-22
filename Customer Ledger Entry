@@ -1,0 +1,20 @@
+SELECT 
+    RM.CUSTNMBR,
+    RM.CPRCSTNM,
+    RM.DOCDATE,
+    RM.DUEDATE,
+
+    RM.DOCNUMBR AS [Invoice No],   -- ✅ this is the invoice number
+
+    RM.ORTRXAMT,
+    RM.CURTRXAM,
+
+    CASE 
+        WHEN RM.CURTRXAM = 0 THEN 'Closed'
+        ELSE 'Open'
+    END AS Status
+
+FROM SWFM.dbo.RM20101 RM
+
+WHERE RM.DOCDATE >= '2019-01-01'
+  AND RM.DOCDATE <  '2026-01-01';
