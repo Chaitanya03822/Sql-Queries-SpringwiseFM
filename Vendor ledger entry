@@ -1,0 +1,45 @@
+SELECT 
+    PM.VENDORID AS [Vendor No.],
+    VM.VENDNAME AS [Vendor Name],
+
+    PM.DOCDATE AS [Posting Date],
+    PM.DUEDATE AS [Due Date],
+
+    CASE PM.DOCTYPE
+        WHEN 1 THEN 'Invoice'
+        WHEN 3 THEN 'Credit Memo'
+        WHEN 5 THEN 'Payment'
+        WHEN 6 THEN 'Payment'
+        ELSE 'Invoice'
+    END AS [Document Type],
+
+    PM.DOCNUMBR AS [Document No.],
+
+    PM.DOCAMNT AS [Total Amount],
+
+    0 AS [Remaining Amount],
+
+    'Closed' AS [Open/Closed],
+
+    -- NEW COLUMN
+    APP_SUM.InvoiceNo
+
+FROM SWFM.dbo.PM30200 PM
+
+LEFT JOIN SWFM.dbo.PM00200 VM
+    ON PM.VENDORID = VM.VENDORID
+
+-- APPLY TABLE (GET INVOICE)
+LEFT JOIN (
+    SELECT 
+        VENDORID,
+        APFRDCNM,
+        MAX(APTODCNM) AS InvoiceNo
+    FROM SWFM.dbo.PM30300
+    GROUP BY VENDORID, APFRDCNM
+) APP_SUM
+    ON PM.DOCNUMBR = APP_SUM.APFRDCNM
+   AND PM.VENDORID = APP_SUM.VENDORID
+
+WHERE PM.DOCDATE >= '2025-01-01'
+  AND PM.DOCDATE <  '2025-12-31';
