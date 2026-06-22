@@ -1,0 +1,83 @@
+
+SELECT
+    -- Basic Info
+    I.ITEMNMBR AS [No.],
+    I.ITEMDESC AS [Description],
+
+    -- Item Type
+    CASE I.ITEMTYPE
+        WHEN 1 THEN 'Inventory'
+        WHEN 2 THEN 'Discontinued'
+        WHEN 3 THEN 'Kit'
+        WHEN 4 THEN 'Service'
+        ELSE 'Inventory'
+    END AS [Item Type],
+
+    -- UOM
+    I.SELNGUOM AS [Base Unit of Measure],
+
+    -- Cost
+    I.CURRCOST AS [Unit Cost],
+    I.STNDCOST AS [Standard Cost],
+
+    -- Price
+    P.UOMPRICE AS [Unit Price],
+
+    -- Quantity (correct column names)
+    ISNULL(Q.QTYONHND,0) AS [Inventory],
+    ISNULL(Q.ATYALLOC,0) AS [Allocated Qty],
+    ISNULL(Q.QTYBKORD,0) AS [Back Order Qty],
+
+    -- Item Class
+    I.ITMCLSCD AS [Item Category Code],
+
+    -- GL Accounts (concatenated)
+    RTRIM(GL_INV.ACTNUMBR_1) + '-' +
+    RTRIM(GL_INV.ACTNUMBR_2) + '-' +
+    RTRIM(GL_INV.ACTNUMBR_3) + '-' +
+    RTRIM(GL_INV.ACTNUMBR_4) + '-' +
+    RTRIM(GL_INV.ACTNUMBR_5) + '-' +
+    RTRIM(GL_INV.ACTNUMBR_6) AS [Inventory Account],
+
+    RTRIM(GL_COGS.ACTNUMBR_1) + '-' +
+    RTRIM(GL_COGS.ACTNUMBR_2) + '-' +
+    RTRIM(GL_COGS.ACTNUMBR_3) + '-' +
+    RTRIM(GL_COGS.ACTNUMBR_4) + '-' +
+    RTRIM(GL_COGS.ACTNUMBR_5) + '-' +
+    RTRIM(GL_COGS.ACTNUMBR_6) AS [COGS Account],
+
+    RTRIM(GL_SALES.ACTNUMBR_1) + '-' +
+    RTRIM(GL_SALES.ACTNUMBR_2) + '-' +
+    RTRIM(GL_SALES.ACTNUMBR_3) + '-' +
+    RTRIM(GL_SALES.ACTNUMBR_4) + '-' +
+    RTRIM(GL_SALES.ACTNUMBR_5) + '-' +
+    RTRIM(GL_SALES.ACTNUMBR_6) AS [Sales Account]
+
+FROM SWFM.dbo.IV00101 I
+
+-- Quantity (fixed column names)
+LEFT JOIN (
+    SELECT 
+        ITEMNMBR,
+        SUM(QTYONHND) AS QTYONHND,
+        SUM(ATYALLOC) AS ATYALLOC,
+        SUM(QTYBKORD) AS QTYBKORD
+    FROM SWFM.dbo.IV00102
+    GROUP BY ITEMNMBR
+) Q ON I.ITEMNMBR = Q.ITEMNMBR
+
+-- Price
+LEFT JOIN SWFM.dbo.IV00108 P 
+    ON I.ITEMNMBR = P.ITEMNMBR
+
+-- GL Accounts
+LEFT JOIN SWFM.dbo.GL00100 GL_INV 
+    ON I.IVIVINDX = GL_INV.ACTINDX
+
+LEFT JOIN SWFM.dbo.GL00100 GL_COGS 
+    ON I.IVCOGSIX = GL_COGS.ACTINDX
+
+LEFT JOIN SWFM.dbo.GL00100 GL_SALES 
+    ON I.IVSLSIDX = GL_SALES.ACTINDX
+
+ORDER BY I.ITEMNMBR;
