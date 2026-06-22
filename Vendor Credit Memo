@@ -1,0 +1,64 @@
+SELECT 
+    PM.VENDORID                AS [Vendor No.],
+    VM.VENDNAME                AS [Vendor Name],
+    PM.DOCDATE                 AS [Posting Date],
+    PM.DOCNUMBR                AS [Document No.],
+
+    'Credit Memo'              AS [Document Type],
+
+    GL.ACTNUMBR_1 + '-' +
+    GL.ACTNUMBR_2 + '-' +
+    GL.ACTNUMBR_3 + '-' +
+    GL.ACTNUMBR_4 + '-' +
+    GL.ACTNUMBR_5 + '-' +
+    GL.ACTNUMBR_6             AS [GL Account No.],
+
+    GL.ACTDESCR                AS [GL Account Name],
+
+    DIST.CRDTAMNT              AS [Credit Amount],
+    DIST.DEBITAMT              AS [Debit Amount],
+
+    -- ✅ Applied info (aggregated, so NO duplication)
+    APP_SUM.AppliedInvoiceNo,
+    APP_SUM.AppliedAmount
+
+FROM SWFM.dbo.PM30200 PM
+
+INNER JOIN SWFM.dbo.PM30600 DIST
+    ON PM.VCHRNMBR = DIST.VCHRNMBR
+
+INNER JOIN SWFM.dbo.GL00100 GL
+    ON DIST.DSTINDX = GL.ACTINDX
+
+LEFT JOIN SWFM.dbo.PM00200 VM
+    ON PM.VENDORID = VM.VENDORID
+
+-- 🔥 APPLY SUMMARY (KEY PART)
+LEFT JOIN (
+    SELECT 
+        APFRDCNM,
+        VENDORID,
+        MAX(APTODCNM) AS AppliedInvoiceNo,
+        SUM(APPLDAMT) AS AppliedAmount
+    FROM (
+        SELECT APFRDCNM, VENDORID, APTODCNM, APPLDAMT
+        FROM SWFM.dbo.PM10200
+
+        UNION ALL
+
+        SELECT APFRDCNM, VENDORID, APTODCNM, APPLDAMT
+        FROM SWFM.dbo.PM30300
+    ) A
+    WHERE APPLDAMT <> 0
+    GROUP BY APFRDCNM, VENDORID
+) APP_SUM
+    ON PM.DOCNUMBR = APP_SUM.APFRDCNM   -- ✅ CORRECT LINK
+   AND PM.VENDORID = APP_SUM.VENDORID
+
+-- ✅ FIXED DOCTYPE
+WHERE PM.DOCTYPE = 5
+
+AND PM.DOCDATE >= '2019-01-01'
+AND PM.DOCDATE <  '2026-01-01'
+
+ORDER BY PM.VENDORID, PM.DOCDATE;
