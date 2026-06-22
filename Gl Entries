@@ -1,0 +1,57 @@
+SELECT 
+    T.JRNENTRY                         AS [Journal Entry],
+    T.SERIES                           AS [Series],
+    T.TRXDATE                          AS [TRX Date],
+
+    RTRIM(GL.ACTNUMBR_1) + '-' +
+    RTRIM(GL.ACTNUMBR_2) + '-' +
+    RTRIM(GL.ACTNUMBR_3) + '-' +
+    RTRIM(GL.ACTNUMBR_4) + '-' +
+    RTRIM(GL.ACTNUMBR_5) + '-' +
+    RTRIM(GL.ACTNUMBR_6)               AS [Account Number],
+
+    GL.ACTDESCR                        AS [Account Description],
+
+    T.ORTRXSRC                         AS [Description],
+
+    T.DEBITAMT                         AS [Debit Amount],
+    T.CRDTAMNT                         AS [Credit Amount],
+
+    T.ORDOCNUM                         AS [Originating Document Number],
+    T.REFRENCE                         AS [Reference],
+    T.ORTRXSRC                         AS [Source Document],
+
+    HDR.USWHPSTD                       AS [User Who Posted],
+
+    T.ORTRXSRC                         AS [Originating Master ID],
+    'N/A'                              AS [Originating Master Name]
+
+FROM (
+    SELECT 
+        ACTINDX, TRXDATE, REFRENCE,
+        DEBITAMT, CRDTAMNT,
+        JRNENTRY, SERIES,
+        ORTRXSRC, ORDOCNUM
+    FROM SWFM.dbo.GL20000
+
+    UNION ALL
+
+    SELECT 
+        ACTINDX, TRXDATE, REFRENCE,
+        DEBITAMT, CRDTAMNT,
+        JRNENTRY, SERIES,
+        ORTRXSRC, ORDOCNUM
+    FROM SWFM.dbo.GL30000
+) T
+
+INNER JOIN SWFM.dbo.GL00100 GL 
+    ON T.ACTINDX = GL.ACTINDX
+
+-- Correct header join
+LEFT JOIN SWFM.dbo.GL10000 HDR
+    ON T.JRNENTRY = HDR.JRNENTRY
+
+WHERE T.TRXDATE >= '2025-01-01'
+  AND T.TRXDATE <  '2026-01-01'
+
+ORDER BY T.TRXDATE, [Account Number];
