@@ -1,0 +1,25 @@
+
+SELECT DISTINCT
+    'DEPARTMENT' AS [Dimension Code],
+
+    RTRIM(GL.ACTNUMBR_1) AS [Code],
+
+    CASE RTRIM(GL.ACTNUMBR_1)
+        WHEN '00' THEN 'Default'
+        WHEN '01' THEN 'Administration'
+        WHEN '02' THEN 'Finance'
+        WHEN '03' THEN 'Information Systems'
+        WHEN '04' THEN 'Marketing & Sales'
+        WHEN '05' THEN 'Operations'
+        WHEN '06' THEN 'Canada'
+        WHEN '99' THEN 'Other'
+        ELSE 'Unknown'
+    END AS [Name],
+
+    0 AS [Blocked]
+
+FROM SWFM.dbo.GL00100 GL
+
+WHERE RTRIM(GL.ACTNUMBR_1) <> ''
+
+ORDER BY [Code];
