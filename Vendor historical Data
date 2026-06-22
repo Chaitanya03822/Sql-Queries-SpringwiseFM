@@ -1,0 +1,67 @@
+
+SELECT 
+    'GENERAL' AS [Journal Template Name],
+    'VENDOR-HIST-2019' AS [Journal Batch Name],
+
+    ROW_NUMBER() OVER (ORDER BY PM.VENDORID, PM.DOCDATE) * 10000 AS [Line No.],
+
+    PM.DOCDATE AS [Posting Date],
+
+    CASE PM.DOCTYPE
+        WHEN 1 THEN 'Invoice'
+        WHEN 3 THEN 'Credit Memo'
+        WHEN 5 THEN 'Payment'
+        WHEN 6 THEN 'Payment'
+        ELSE 'Invoice'
+    END AS [Document Type],
+
+    PM.DOCNUMBR AS [Document No.],
+
+    'Vendor' AS [Account Type],
+    PM.VENDORID AS [Account No.],
+
+    PM.DOCNUMBR AS [Description],
+
+    CASE 
+        WHEN PM.DOCTYPE = 1 THEN PM.DOCAMNT
+        ELSE 0
+    END AS [Debit Amount],
+
+    CASE 
+        WHEN PM.DOCTYPE IN (3,5,6) THEN PM.DOCAMNT
+        ELSE 0
+    END AS [Credit Amount],
+
+    'G/L Account' AS [Bal. Account Type],
+
+    RTRIM(GL.ACTNUMBR_1) + '-' +
+    RTRIM(GL.ACTNUMBR_2) + '-' +
+    RTRIM(GL.ACTNUMBR_3) + '-' +
+    RTRIM(GL.ACTNUMBR_4) + '-' +
+    RTRIM(GL.ACTNUMBR_5) + '-' +
+    RTRIM(GL.ACTNUMBR_6) AS [Bal. Account No.],
+
+    PM.DOCNUMBR AS [External Document No.],
+
+    '' AS [Applies-to Doc. Type],
+    '' AS [Applies-to Doc. No.],
+
+    '' AS [Global Dimension 1 Code],
+    '' AS [Global Dimension 2 Code],
+
+    'GP-VENDOR-2019' AS [Source Code],
+    PM.DOCNUMBR AS [Posting Description]
+
+FROM SWFM.dbo.PM30200 PM
+
+LEFT JOIN SWFM.dbo.PM30600 DIST
+    ON PM.VCHRNMBR = DIST.VCHRNMBR
+
+LEFT JOIN SWFM.dbo.GL00100 GL
+    ON DIST.DSTINDX = GL.ACTINDX
+
+-- ✅ ONLY 2019 DATA
+WHERE PM.DOCDATE >= '2019-01-01'
+  AND PM.DOCDATE <= '2019-12-31'
+
+ORDER BY PM.VENDORID, PM.DOCDATE;
