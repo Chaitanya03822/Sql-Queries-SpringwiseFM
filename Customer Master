@@ -1,0 +1,61 @@
+
+SELECT 
+
+
+    -- Primary Key
+    CUST.CUSTNMBR AS [No],
+
+    -- Name
+    CUST.CUSTNAME AS [Name],
+    CUST.SHRTNAME AS [Search Name],
+
+    -- Address
+    ADR.ADDRESS1 AS [Address],
+    ADR.ADDRESS2 AS [Address 2],
+    ADR.ADDRESS3 AS [Address 3],
+    ADR.CITY AS [City],
+    ADR.STATE AS [State],
+    ADR.ZIP AS [Post Code],
+    ADR.COUNTRY AS [Country/Region Code],
+
+    -- Contact
+    ADR.PHONE1 AS [Phone No.],
+    ADR.PHONE2 AS [Mobile Phone No.],
+    ADR.PHONE3 AS [Fax No.],
+
+    -- Email
+    EMAIL.EmailToAddress AS [E-Mail],
+
+    -- Financial
+    CUST.CRLMTAMT AS [Credit Limit (LCY)],
+    CUST.CURNCYID AS [Currency Code],
+    CUST.PYMTRMID AS [Payment Terms Code],
+
+    -- Tax (India specific adjust if needed)
+    CUST.TXRGNNUM AS [GST Registration No.],
+
+    -- Salesperson
+    CUST.SLPRSNID AS [Salesperson Code],
+
+    -- Blocked
+    CASE 
+        WHEN CUST.INACTIVE = 1 THEN 'All'
+        ELSE ''
+    END AS [Blocked]
+
+FROM SWFM.dbo.RM00101 CUST
+
+LEFT JOIN SWFM.dbo.RM00102 ADR 
+    ON CUST.CUSTNMBR = ADR.CUSTNMBR 
+    AND ADR.ADRSCODE = CUST.ADRSCODE
+
+LEFT JOIN (
+    SELECT 
+        Master_ID,
+        EmailToAddress
+    FROM SWFM.dbo.SY01200
+    WHERE Master_Type = 'CUS'
+) EMAIL 
+    ON EMAIL.Master_ID = CUST.CUSTNMBR
+
+ORDER BY CUST.CUSTNMBR;
